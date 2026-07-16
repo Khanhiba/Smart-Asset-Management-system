@@ -19,8 +19,7 @@ async function upsertUser(values) {
   return user;
 }
 
-async function run() {
-  await connectDatabase(process.env.MONGODB_URI);
+export async function seedDemoData() {
   const [admin, manager, technician, viewer] = await Promise.all([
     upsertUser({ name: 'Aarav Sharma', email: 'admin@nexus.edu', password: 'NexusDemo!2026', role: 'admin', department: 'IT Operations' }),
     upsertUser({ name: 'Maya Patel', email: 'manager@nexus.edu', password: 'NexusDemo!2026', role: 'asset_manager', department: 'IT Operations' }),
@@ -55,4 +54,11 @@ async function run() {
   console.info('Seed complete. Login: admin@nexus.edu / NexusDemo!2026');
 }
 
-run().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => mongoose.disconnect());
+async function run() {
+  await connectDatabase(process.env.MONGODB_URI);
+  await seedDemoData();
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  run().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => mongoose.disconnect());
+}

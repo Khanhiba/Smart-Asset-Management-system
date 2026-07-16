@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: SEED_DEMO_DATA
+        value: true
       - key: JWT_SECRET
         generateValue: true
       - key: MONGODB_URI

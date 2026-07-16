@@ -85,7 +85,7 @@ The backend test suite covers risk escalation/capping and the no-key AI fallback
 
 ## Deploy to Render
 
-The included `render.yaml` deploys the React client and Express API together as one Render web service. It builds the client, serves the compiled application from Express, seeds the demo data after the first deployment, and exposes `/api/health` for health checks.
+The included `render.yaml` deploys the React client and Express API together as one Render web service. It builds the client, serves the compiled application from Express, seeds the demo data automatically on a fresh database, and exposes `/api/health` for health checks.
 
 1. Create a free MongoDB Atlas cluster and allow Render's outbound access in its network settings.
 2. In Render, select **New -> Blueprint**, connect `Khanhiba/Smart-Asset-Management-system`, and select the `main` branch.
