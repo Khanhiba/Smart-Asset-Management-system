@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import app from './app.js';
 import { connectDatabase } from './config/db.js';
@@ -6,7 +7,10 @@ import { seedDemoData } from './seed.js';
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 const port = Number(process.env.PORT || 5000);
-if (!process.env.JWT_SECRET) { console.error('JWT_SECRET is required. Copy .env.example to .env.'); process.exit(1); }
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = randomBytes(32).toString('hex');
+  console.warn('JWT_SECRET is not configured. Using an ephemeral secret in demo fallback mode.');
+}
 
 async function start() {
   try {
