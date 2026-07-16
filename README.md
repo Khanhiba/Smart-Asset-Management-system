@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Nexus Assets — Smart Asset Management System
 
 Nexus Assets is a hackathon-ready asset intelligence platform for universities and other organizations managing laptops, projectors, lab equipment, cameras, network devices, printers, and furniture. It goes beyond CRUD with QR custody workflows, lifecycle audit logs, maintenance automation, risk signals, PDF exports, and AI-backed operational recommendations.
@@ -82,3 +83,7 @@ The backend test suite covers risk escalation/capping and the no-key AI fallback
 3. Open **Scan & Move**, enter `AST-IT-001`, and return the overdue laptop.
 4. Open the maintenance desk and resolve a service ticket.
 5. Download an audit or inventory PDF from **Reports**.
+=======
+# Smart-Asset-Management-system
+Smart Asset Management System is a web-based platform that helps organizations efficiently track, manage, and maintain their physical assets. It provides real-time asset monitoring, QR code-based tracking, maintenance scheduling, and role-based access for improved productivity.
+>>>>>>> 72182adc54686dace9f3c1002addc9b307c50323
