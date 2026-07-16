@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import authRoutes from './routes/auth.js';
 import assetRoutes from './routes/assets.js';
 import assignmentRoutes from './routes/assignments.js';
@@ -12,6 +15,8 @@ import auditRoutes from './routes/audit.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const clientBuild = path.join(projectRoot, 'client', 'dist');
 app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '1mb' }));
@@ -25,6 +30,13 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit', auditRoutes);
+if (existsSync(clientBuild)) {
+  app.use(express.static(clientBuild));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    return res.sendFile(path.join(clientBuild, 'index.html'));
+  });
+}
 app.use(notFound);
 app.use(errorHandler);
 export default app;
