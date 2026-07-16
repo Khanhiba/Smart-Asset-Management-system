@@ -21,7 +21,7 @@ app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: 'draft-7', legacyHeaders: false, message: { message: 'Too many requests. Please try again shortly.' } }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'nexus-assets', timestamp: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'nexus-assets', mode: process.env.DEMO_FALLBACK === 'true' ? 'demo' : 'database', timestamp: new Date().toISOString() }));
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/assignments', assignmentRoutes);
