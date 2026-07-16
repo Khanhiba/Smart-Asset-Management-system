@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-# Nexus Assets — Smart Asset Management System
+# Nexus Assets - Smart Asset Management System
 
 Nexus Assets is a hackathon-ready asset intelligence platform for universities and other organizations managing laptops, projectors, lab equipment, cameras, network devices, printers, and furniture. It goes beyond CRUD with QR custody workflows, lifecycle audit logs, maintenance automation, risk signals, PDF exports, and AI-backed operational recommendations.
 
@@ -89,12 +88,19 @@ The backend test suite covers risk escalation/capping and the no-key AI fallback
 The included `render.yaml` deploys the React client and Express API together as one Render web service. It builds the client, serves the compiled application from Express, seeds the demo data after the first deployment, and exposes `/api/health` for health checks.
 
 1. Create a free MongoDB Atlas cluster and allow Render's outbound access in its network settings.
-2. In Render, select **New → Blueprint**, connect `Khanhiba/Smart-Asset-Management-system`, and select the `main` branch.
+2. In Render, select **New -> Blueprint**, connect `Khanhiba/Smart-Asset-Management-system`, and select the `main` branch.
 3. Render discovers `render.yaml`. Enter the Atlas URI when prompted for `MONGODB_URI`; Render generates `JWT_SECRET` automatically.
 4. Create the Blueprint and wait for the build and one-time seed to finish. The assigned `onrender.com` URL serves both the website and API.
 
 Set `OPENAI_API_KEY` manually in the Render service environment only if live OpenAI insights are desired. Without it, Nexus uses its built-in deterministic insight fallback.
-=======
-# Smart-Asset-Management-system
-Smart Asset Management System is a web-based platform that helps organizations efficiently track, manage, and maintain their physical assets. It provides real-time asset monitoring, QR code-based tracking, maintenance scheduling, and role-based access for improved productivity.
->>>>>>> 72182adc54686dace9f3c1002addc9b307c50323
+
+If you create a Render **Web Service** instead of a Blueprint, use these exact settings:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | Leave blank (repository root) |
+| Build Command | `npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+
+The root build script installs the client and server workspaces with development build tools, then compiles the Vite client. This avoids the `vite: not found` / exit status `127` error that occurs when Render installs only the root package.
