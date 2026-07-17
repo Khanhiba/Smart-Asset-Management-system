@@ -2,7 +2,7 @@ const API_ROOT = import.meta.env.VITE_API_URL || '';
 const DEMO_TOKEN = 'nexus-demo-mode';
 const DAY = 86400000;
 const dateFromNow = (days) => new Date(Date.now() + days * DAY).toISOString();
-const demoUser = { id: 'demo-admin', name: 'Aarav Sharma', email: 'admin@nexus.edu', role: 'admin', department: 'IT Operations' };
+const demoUser = { id: 'demo-admin', name: 'Irha Hasan', email: 'admin@nexus.edu', role: 'admin', department: 'IT Operations' };
 
 let demoAssets = [
   ['asset-1', 'AST-IT-001', 'MacBook Pro 14', 'Laptop', 'Innovation Lab', 'assigned', 'excellent', 38],

@@ -15,13 +15,19 @@ dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 
 async function upsertUser(values) {
   let user = await User.findOne({ email: values.email });
-  if (!user) user = await User.create(values);
+  if (!user) return User.create(values);
+  if (user.name !== values.name || user.role !== values.role || user.department !== values.department) {
+    user.name = values.name;
+    user.role = values.role;
+    user.department = values.department;
+    await user.save();
+  }
   return user;
 }
 
 export async function seedDemoData() {
   const [admin, manager, technician, viewer] = await Promise.all([
-    upsertUser({ name: 'Aarav Sharma', email: 'admin@nexus.edu', password: 'NexusDemo!2026', role: 'admin', department: 'IT Operations' }),
+    upsertUser({ name: 'Irha Hasan', email: 'admin@nexus.edu', password: 'NexusDemo!2026', role: 'admin', department: 'IT Operations' }),
     upsertUser({ name: 'Maya Patel', email: 'manager@nexus.edu', password: 'NexusDemo!2026', role: 'asset_manager', department: 'IT Operations' }),
     upsertUser({ name: 'Rohan Das', email: 'technician@nexus.edu', password: 'NexusDemo!2026', role: 'technician', department: 'Technical Services' }),
     upsertUser({ name: 'Dr. Sara Khan', email: 'viewer@nexus.edu', password: 'NexusDemo!2026', role: 'viewer', department: 'Physics' }),
