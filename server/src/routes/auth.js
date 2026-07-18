@@ -4,20 +4,17 @@ import { z } from 'zod';
 import { User } from '../models/User.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { AppError, asyncRoute } from '../utils/appError.js';
-import { ROLES } from '../utils/roles.js';
+import { userInput } from '../utils/validation.js';
+import { runtime } from '../config/env.js';
 
 const router = express.Router();
 const userView = (user) => ({ id: user.id, name: user.name, email: user.email, role: user.role, department: user.department });
-const tokenFor = (user) => jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+const tokenFor = (user) => jwt.sign({ sub: user.id, role: user.role }, runtime.jwtSecret, { expiresIn: runtime.jwtExpiresIn, issuer: runtime.jwtIssuer, audience: runtime.jwtAudience });
 
 router.post('/login', asyncRoute(async (req, res) => {
-  const { email, password } = z.object({ email: z.string().email(), password: z.string().min(1) }).parse(req.body);
-  if (process.env.DEMO_FALLBACK === 'true') {
-    if (email.toLowerCase() !== 'admin@nexus.edu' || password !== 'NexusDemo!2026') throw new AppError('Incorrect email or password.', 401);
-    return res.json({ token: 'nexus-demo-mode', user: { id: 'demo-admin', name: 'Irha Hasan', email: 'admin@nexus.edu', role: 'admin', department: 'IT Operations' } });
-  }
+  const { email, password } = z.object({ email: z.string().trim().email().max(254), password: z.string().min(1).max(72) }).strict().parse(req.body);
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-  if (!user || !user.active || !(await user.verifyPassword(password))) throw new AppError('Incorrect email or password.', 401);
+  if (!user || !user.active || !(await user.verifyPassword(password))) throw new AppError('Invalid email or password.', 401);
   res.json({ token: tokenFor(user), user: userView(user) });
 }));
 
@@ -29,7 +26,7 @@ router.get('/users', authenticate, authorize('admin', 'asset_manager', 'technici
 }));
 
 router.post('/users', authenticate, authorize('admin'), asyncRoute(async (req, res) => {
-  const values = z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(10), role: z.enum(ROLES), department: z.string().min(2) }).parse(req.body);
+  const values = userInput.parse(req.body);
   const user = await User.create(values);
   res.status(201).json({ user: userView(user) });
 }));

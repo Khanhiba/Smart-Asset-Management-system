@@ -5,7 +5,7 @@ import { ROLES } from '../utils/roles.js';
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, maxlength: 80 },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, select: false },
+  password: { type: String, required: true, select: false, maxlength: 72 },
   role: { type: String, enum: ROLES, default: 'viewer' },
   department: { type: String, trim: true, default: 'General' },
   active: { type: Boolean, default: true },

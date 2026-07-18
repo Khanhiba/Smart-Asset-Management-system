@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import mongoose from 'mongoose';
+import { AppError } from './appError.js';
+
+export function objectId(value, label = 'Record') {
+  if (!mongoose.isValidObjectId(value)) throw new AppError(`${label} identifier is invalid.`, 400);
+  return value;
+}
 
 export const assetInput = z.object({
   assetTag: z.string().trim().toUpperCase().regex(/^AST-[A-Z0-9-]{3,}$/, 'Use an asset tag such as AST-IT-001.'),
@@ -10,17 +17,24 @@ export const assetInput = z.object({
   purchaseCost: z.coerce.number().min(0).optional().nullable(), warrantyExpiry: z.coerce.date().optional().nullable(),
   imageUrl: z.string().url().optional().or(z.literal('')), notes: z.string().max(1000).optional().or(z.literal('')),
   maintenanceIntervalDays: z.coerce.number().int().min(1).max(3650).optional(), lastMaintenanceDate: z.coerce.date().optional().nullable(),
-});
+}).strict();
 
 export const assignmentInput = z.object({
   assigneeName: z.string().trim().min(2).max(100), assigneeEmail: z.string().email().optional().or(z.literal('')),
   assigneeDepartment: z.string().trim().max(80).optional().or(z.literal('')), dueDate: z.coerce.date(),
   conditionOut: z.enum(['excellent', 'good', 'fair', 'poor']).optional(), checkoutNotes: z.string().trim().max(500).optional().or(z.literal('')),
-});
+}).strict();
 
-export const returnInput = z.object({ conditionIn: z.enum(['excellent', 'good', 'fair', 'poor']), returnNotes: z.string().trim().max(500).optional().or(z.literal('')) });
+export const returnInput = z.object({ conditionIn: z.enum(['excellent', 'good', 'fair', 'poor']), returnNotes: z.string().trim().max(500).optional().or(z.literal('')) }).strict();
 export const maintenanceInput = z.object({
   assetId: z.string().min(1), title: z.string().trim().min(3).max(160), type: z.enum(['preventive', 'repair', 'inspection', 'calibration']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(), dueDate: z.coerce.date(), assignedTo: z.string().optional().nullable(), notes: z.string().trim().max(1200).optional().or(z.literal('')),
-});
-export const maintenanceResolution = z.object({ status: z.enum(['in_progress', 'resolved']), cost: z.coerce.number().min(0).optional().nullable(), resolutionNotes: z.string().trim().max(1200).optional().or(z.literal('')) });
+}).strict();
+export const maintenanceResolution = z.object({ status: z.enum(['in_progress', 'resolved']), cost: z.coerce.number().min(0).optional().nullable(), resolutionNotes: z.string().trim().max(1200).optional().or(z.literal('')) }).strict();
+export const userInput = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(12).max(72),
+  role: z.enum(['admin', 'asset_manager', 'technician', 'viewer']),
+  department: z.string().trim().min(2).max(80),
+}).strict();

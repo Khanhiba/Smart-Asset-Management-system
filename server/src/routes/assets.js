@@ -6,35 +6,46 @@ import { Maintenance } from '../models/Maintenance.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { AppError, asyncRoute } from '../utils/appError.js';
-import { assetInput } from '../utils/validation.js';
+import { assetInput, objectId } from '../utils/validation.js';
 import { STAFF_ROLES } from '../utils/roles.js';
 import { calculateAssetRisk, classifyRisk } from '../services/risk.js';
 import { recordAudit } from '../services/audit.js';
 
 const router = express.Router();
 router.use(authenticate);
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+async function hydrateRisks(assets) {
+  if (!assets.length) return [];
+  const assetIds = assets.map((asset) => asset._id);
+  const [overdueAssetIds, maintenanceAssetIds] = await Promise.all([
+    Assignment.distinct('asset', { asset: { $in: assetIds }, returnedAt: null, dueDate: { $lt: new Date() } }),
+    Maintenance.distinct('asset', { asset: { $in: assetIds }, status: { $ne: 'resolved' } }),
+  ]);
+  const overdue = new Set(overdueAssetIds.map(String));
+  const maintenance = new Set(maintenanceAssetIds.map(String));
+  return assets.map((asset) => {
+    const riskScore = calculateAssetRisk(asset, { hasOverdueAssignment: overdue.has(String(asset._id)), hasOpenMaintenance: maintenance.has(String(asset._id)) });
+    return { ...asset.toObject(), riskScore, riskLevel: classifyRisk(riskScore) };
+  });
+}
 
 async function hydrateRisk(asset) {
-  const [overdue, openMaintenance] = await Promise.all([
-    Assignment.exists({ asset: asset._id, returnedAt: null, dueDate: { $lt: new Date() } }),
-    Maintenance.exists({ asset: asset._id, status: { $ne: 'resolved' } }),
-  ]);
-  const riskScore = calculateAssetRisk(asset, { hasOverdueAssignment: Boolean(overdue), hasOpenMaintenance: Boolean(openMaintenance) });
-  if (asset.riskScore !== riskScore) { asset.riskScore = riskScore; await asset.save(); }
-  return { ...asset.toObject(), riskLevel: classifyRisk(riskScore) };
+  return (await hydrateRisks([asset]))[0];
 }
 
 router.get('/', asyncRoute(async (req, res) => {
   const { search, status, category, location, risk, page = '1', limit = '24' } = req.query;
   const query = {};
-  if (search) query.$or = [{ assetTag: new RegExp(search, 'i') }, { name: new RegExp(search, 'i') }, { serialNumber: new RegExp(search, 'i') }];
-  if (status) query.status = status;
-  if (category) query.category = category;
-  if (location) query.location = location;
+  const searchTerm = typeof search === 'string' ? search.trim().slice(0, 80) : '';
+  if (searchTerm) { const pattern = new RegExp(escapeRegex(searchTerm), 'i'); query.$or = [{ assetTag: pattern }, { name: pattern }, { serialNumber: pattern }]; }
+  if (typeof status === 'string' && ['available', 'assigned', 'maintenance', 'retired', 'lost'].includes(status)) query.status = status;
+  if (typeof category === 'string' && category.trim()) query.category = category.trim().slice(0, 60);
+  if (typeof location === 'string' && location.trim()) query.location = location.trim().slice(0, 100);
   if (risk === 'high') query.riskScore = { $gte: 35 };
-  const parsedPage = Math.max(1, Number(page)); const parsedLimit = Math.min(100, Math.max(1, Number(limit)));
+  const parsedPage = Math.max(1, Number.parseInt(String(page), 10) || 1); const parsedLimit = Math.min(100, Math.max(1, Number.parseInt(String(limit), 10) || 24));
   const [assets, total] = await Promise.all([Asset.find(query).sort({ updatedAt: -1 }).skip((parsedPage - 1) * parsedLimit).limit(parsedLimit), Asset.countDocuments(query)]);
-  const resolvedAssets = await Promise.all(assets.map(hydrateRisk));
+  const resolvedAssets = await hydrateRisks(assets);
   res.json({ assets: resolvedAssets, total, page: parsedPage, pages: Math.ceil(total / parsedLimit) });
 }));
 
@@ -50,14 +61,14 @@ router.post('/', authorize(...STAFF_ROLES), asyncRoute(async (req, res) => {
 }));
 
 router.get('/lookup/:code', asyncRoute(async (req, res) => {
-  const value = decodeURIComponent(req.params.code);
+  const value = decodeURIComponent(req.params.code).trim().slice(0, 256);
   const asset = await Asset.findOne({ $or: [{ qrCode: value }, { assetTag: value.toUpperCase() }] });
   if (!asset) throw new AppError('No asset matches that QR code or asset tag.', 404);
   res.json({ asset: await hydrateRisk(asset) });
 }));
 
 router.get('/:id', asyncRoute(async (req, res) => {
-  const asset = await Asset.findById(req.params.id);
+  const asset = await Asset.findById(objectId(req.params.id, 'Asset'));
   if (!asset) throw new AppError('Asset not found.', 404);
   const [assignment, maintenance, history] = await Promise.all([
     Assignment.findOne({ asset: asset._id, returnedAt: null }).populate('checkedOutBy', 'name email'),
@@ -68,7 +79,7 @@ router.get('/:id', asyncRoute(async (req, res) => {
 }));
 
 router.patch('/:id', authorize(...STAFF_ROLES), asyncRoute(async (req, res) => {
-  const asset = await Asset.findById(req.params.id);
+  const asset = await Asset.findById(objectId(req.params.id, 'Asset'));
   if (!asset) throw new AppError('Asset not found.', 404);
   const values = assetInput.partial().parse(req.body);
   if (values.status && values.status === 'assigned') throw new AppError('Use the checkout workflow to assign an asset.', 422);

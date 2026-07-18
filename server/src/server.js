@@ -1,26 +1,24 @@
-import dotenv from 'dotenv';
-import { randomBytes } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 import app from './app.js';
-import { connectDatabase } from './config/db.js';
-import { seedDemoData } from './seed.js';
-
-dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
-const port = Number(process.env.PORT || 5000);
-if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = randomBytes(32).toString('hex');
-  console.warn('JWT_SECRET is not configured. Using an ephemeral secret in demo fallback mode.');
-}
+import { connectDatabase, disconnectDatabase } from './config/db.js';
+import { runtime, validateEnvironment } from './config/env.js';
 
 async function start() {
-  try {
-    await connectDatabase(process.env.MONGODB_URI);
-    if (process.env.SEED_DEMO_DATA !== 'false') await seedDemoData();
-  } catch (error) {
-    process.env.DEMO_FALLBACK = 'true';
-    console.warn(`Database connection failed. Starting in demo fallback mode: ${error.message}`);
-  }
-  app.listen(port, () => console.info(`Nexus API listening on http://localhost:${port}`));
+  const config = validateEnvironment();
+  await connectDatabase(config.mongoUri);
+  const server = app.listen(config.port, () => console.info(JSON.stringify({ level: 'info', event: 'api_listening', port: config.port, environment: runtime.environment })));
+  const shutdown = async (signal) => {
+    console.info(JSON.stringify({ level: 'info', event: 'shutdown_started', signal }));
+    server.close(async () => {
+      await disconnectDatabase();
+      console.info(JSON.stringify({ level: 'info', event: 'shutdown_complete' }));
+      process.exit(0);
+    });
+  };
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
 }
 
-start();
+start().catch((error) => {
+  console.error(JSON.stringify({ level: 'error', event: 'startup_failed', message: error.message }));
+  process.exit(1);
+});

@@ -1,8 +1,7 @@
-import dotenv from 'dotenv';
 import crypto from 'crypto';
-import mongoose from 'mongoose';
 import { fileURLToPath } from 'node:url';
-import { connectDatabase } from './config/db.js';
+import { connectDatabase, disconnectDatabase } from './config/db.js';
+import { runtime, validateEnvironment } from './config/env.js';
 import { User } from './models/User.js';
 import { Asset } from './models/Asset.js';
 import { Assignment } from './models/Assignment.js';
@@ -11,7 +10,6 @@ import { AuditLog } from './models/AuditLog.js';
 
 const days = (number) => new Date(Date.now() + number * 86400000);
 const asset = (assetTag, name, category, location, overrides = {}) => ({ assetTag, name, category, location, department: 'Engineering & Sciences', manufacturer: 'Nexus Demo', model: 'Campus Edition', serialNumber: `SN-${assetTag}`, qrCode: `nexus:${crypto.randomUUID()}`, condition: 'good', purchaseDate: days(-460), purchaseCost: 50000, warrantyExpiry: days(180), maintenanceIntervalDays: 180, lastMaintenanceDate: days(-80), nextMaintenanceDate: days(100), ...overrides });
-dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 
 async function upsertUser(values) {
   let user = await User.findOne({ email: values.email });
@@ -57,14 +55,16 @@ export async function seedDemoData() {
   const projector = created.find((item) => item.assetTag === 'AST-AV-014');
   if (!await Maintenance.exists({ asset: projector._id, status: { $ne: 'resolved' } })) await Maintenance.create({ asset: projector._id, title: 'Preventive projector service', type: 'preventive', priority: 'medium', dueDate: days(5), assignedTo: technician._id, createdBy: manager._id, notes: 'Clean filters and inspect lamp runtime.' });
   if (!await AuditLog.exists()) await AuditLog.create({ action: 'demo_inventory_seeded', entityType: 'system', entityId: admin._id, actor: admin._id, actorName: admin.name, details: { assets: created.length } });
-  console.info('Seed complete. Login: admin@nexus.edu / NexusDemo!2026');
+  console.info(JSON.stringify({ level: 'info', event: 'demo_seed_complete', assets: created.length }));
 }
 
 async function run() {
-  await connectDatabase(process.env.MONGODB_URI);
+  const config = validateEnvironment();
+  if (runtime.environment === 'production') throw new Error('The sample-data seed is disabled in production. Create the first real administrator with npm run bootstrap:admin.');
+  await connectDatabase(config.mongoUri);
   await seedDemoData();
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  run().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => mongoose.disconnect());
+  run().catch((error) => { console.error(JSON.stringify({ level: 'error', event: 'seed_failed', message: error.message })); process.exitCode = 1; }).finally(disconnectDatabase);
 }

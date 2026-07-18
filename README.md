@@ -1,106 +1,146 @@
-# Nexus Assets - Smart Asset Management System
+# Nexus Assets
 
-Nexus Assets is a hackathon-ready asset intelligence platform for universities and other organizations managing laptops, projectors, lab equipment, cameras, network devices, printers, and furniture. It goes beyond CRUD with QR custody workflows, lifecycle audit logs, maintenance automation, risk signals, PDF exports, and AI-backed operational recommendations.
+Nexus Assets is a production-oriented asset lifecycle system for universities and organizations managing equipment, inventory, maintenance, QR custody, and audit records.
 
-## What it includes
+The application consists of two deployable services:
 
-- JWT authentication and role-based access: Admin, Asset Manager, Technician, and Viewer.
-- Asset registry with search, filters, lifecycle status, condition, warranty, location, QR identity, and risk score.
-- QR camera scanner and manual lookup for fast asset checkout and return.
-- Custody controls that prevent invalid assignments and preserve a full audit trail.
-- Maintenance desk with priorities, work status, costs, service history, and automatic availability updates.
-- Chart.js dashboard with inventory, condition, assignment, overdue, maintenance, warranty, and risk signals.
-- OpenAI-backed recommendations when configured; deterministic local recommendations when no API key is present.
-- Professional PDF exports for inventory, maintenance, and audit records; individual printable QR labels.
+- `client/` — React + Vite application deployed to Netlify.
+- `server/` — Express API deployed to Render, backed by MongoDB Atlas.
 
-## Quick start
+The deployed frontend only calls `VITE_API_URL`. There is no local-storage, mock-data, or automatic demo-login fallback in production.
 
-Prerequisites: Node.js 20+ and MongoDB (local or Atlas).
+## Production capabilities
 
-1. Copy `.env.example` to `.env` in the project root and set `MONGODB_URI` and a strong `JWT_SECRET`.
-2. Install packages:
+- JWT sessions with expiry, bcrypt password hashing, protected API routes, and Admin / Asset Manager / Technician / Viewer permissions.
+- MongoDB-backed asset, assignment, maintenance, and immutable audit-log records.
+- QR labels, camera and manual lookup, lifecycle check-out / return controls, maintenance workflows, reports, and dashboard analytics.
+- Input validation, NoSQL-injection sanitisation, rate limits, CORS allow-listing, Helmet headers, CSP, compression, request IDs, and centralized API errors.
+- `/api/health` reports API and MongoDB connection status for the deployment health check.
 
-   ```bash
+## Local setup
+
+Use Node.js 20 or 22 and a MongoDB Atlas connection string. MongoDB must be running and reachable before starting the API.
+
+1. Copy the environment templates:
+
+   ```powershell
+   Copy-Item .env.example .env
+   Copy-Item client/.env.example client/.env
+   ```
+
+2. In `.env`, set a real Atlas `MONGODB_URI`, a random `JWT_SECRET` of at least 32 characters, and `CLIENT_URL=http://localhost:5173`.
+
+3. In `client/.env`, set:
+
+   ```dotenv
+   VITE_API_URL=http://localhost:5000
+   ```
+
+4. Install packages and start both services:
+
+   ```powershell
    npm install
    npm install --prefix server
    npm install --prefix client
-   ```
-
-3. Seed demo users and university inventory:
-
-   ```bash
-   npm run seed
-   ```
-
-4. Start the full application:
-
-   ```bash
    npm run dev
    ```
 
-Open `http://localhost:5173`.
+5. Create the first administrator (this uses the Atlas database configured in `.env`):
 
-Demo login: `admin@nexus.edu` / `NexusDemo!2026`
+   ```powershell
+   $env:BOOTSTRAP_ADMIN_NAME="Your Name"
+   $env:BOOTSTRAP_ADMIN_EMAIL="admin@your-organization.edu"
+   $env:BOOTSTRAP_ADMIN_PASSWORD="Use-a-unique-password-with-12-or-more-characters"
+   npm run bootstrap:admin
+   ```
+
+Open `http://localhost:5173` and sign in with that administrator account.
+
+`npm run seed` is only available for non-production development data. It is deliberately blocked when `NODE_ENV=production` and is never run when the API starts.
 
 ## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `PORT` | Express API port (default `5000`) |
-| `CLIENT_URL` | Allowed frontend origin |
-| `MONGODB_URI` | MongoDB connection string |
-| `JWT_SECRET` | Long secret for signed user sessions |
-| `OPENAI_API_KEY` | Optional; enables OpenAI operational analysis |
-| `OPENAI_MODEL` | Optional OpenAI model override (default `gpt-4.1-mini`) |
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `PORT` | No | API port. Render supplies this automatically. |
+| `NODE_ENV` | Yes in production | Set to `production` on Render. |
+| `MONGODB_URI` | Yes | MongoDB Atlas URI for the real application data. |
+| `JWT_SECRET` | Yes | Unique random secret, at least 32 characters. |
+| `JWT_EXPIRES_IN` | No | Session duration; defaults to `8h`. |
+| `JWT_ISSUER` / `JWT_AUDIENCE` | No | Token validation identifiers. |
+| `CLIENT_URL` | Yes | Comma-separated allowed browser origins, with no path or trailing slash. |
+| `OPENAI_API_KEY` | No | Enables OpenAI-powered aggregate operational insights. |
+| `OPENAI_MODEL` | No | Defaults to `gpt-4.1-mini`. |
+| `VITE_API_URL` | Yes for Netlify | Public URL of the Render API, with no trailing slash. |
 
-Without `OPENAI_API_KEY`, the dashboard transparently shows rule-based recommendations built from real aggregated data. No personal borrower data is sent to the AI service.
+The API fails fast with a clear startup error if `MONGODB_URI`, `JWT_SECRET`, or `CLIENT_URL` is absent or invalid.
 
-## API groups
+## Deploy the API to Render
 
-- `/api/auth` — sign-in, current user, user directory
-- `/api/assets` — registry, QR lookup, detail, create, update
-- `/api/assignments` — checkout, active loans, returns
-- `/api/maintenance` — tickets and technician updates
-- `/api/dashboard` — aggregated KPIs, charts, alerts, activity
-- `/api/insights` — AI or fallback operational recommendations
-- `/api/reports` — inventory, maintenance, and audit export data
-- `/api/audit` — immutable lifecycle events
+1. In MongoDB Atlas, create a database user and allow network access for the Render service. Copy its `mongodb+srv://...` URI.
+2. In Render, choose **New → Blueprint**, select `Khanhiba/Smart-Asset-Management-system`, and deploy the `main` branch. Render reads `render.yaml`.
+3. Set the required variables in the Render service:
 
-## Validation
+   ```dotenv
+   MONGODB_URI=mongodb+srv://...
+   CLIENT_URL=https://smart-asset-management-system.netlify.app
+   ```
 
-```bash
+   Render generates `JWT_SECRET`. Do not use a sample value, and do not configure automatic seed data in production.
+4. Render uses these settings from the Blueprint:
+
+   | Setting | Value |
+   | --- | --- |
+   | Root directory | `server` |
+   | Build command | `npm ci --omit=dev` |
+   | Start command | `npm start` |
+   | Health check | `/api/health` |
+5. Open `https://YOUR-RENDER-SERVICE.onrender.com/api/health`. It must return HTTP `200` and `"database":"connected"` before connecting Netlify.
+
+To create the first production administrator, run `npm run bootstrap:admin` locally with the production Atlas URI and `NODE_ENV=production`, or run the same command from a Render shell after providing the three `BOOTSTRAP_ADMIN_*` environment variables. Remove the bootstrap password environment variable immediately afterwards.
+
+## Deploy the frontend to Netlify
+
+1. Import the GitHub repository in Netlify. `netlify.toml` supplies the build configuration:
+
+   | Setting | Value |
+   | --- | --- |
+   | Base directory | `client` |
+   | Build command | `npm ci --include=dev && npm run build` |
+   | Publish directory | `client/dist` |
+   | Node version | `20` |
+2. Add a Netlify environment variable:
+
+   ```dotenv
+   VITE_API_URL=https://YOUR-RENDER-SERVICE.onrender.com
+   ```
+
+3. Trigger a fresh deploy. Vite bakes this variable into the browser bundle, so changing it always requires a redeploy.
+4. Update Render `CLIENT_URL` with the exact Netlify production domain. If you also use a Netlify preview URL, add it as a comma-separated second origin.
+
+Netlify serves the SPA fallback and the headers in `client/public/_headers`. The API sets its own equivalent server security headers.
+
+## Verification
+
+Run these before release:
+
+```powershell
 npm run build
 npm test
 ```
 
-The backend test suite covers risk escalation/capping and the no-key AI fallback. The frontend production build is compiled with Vite.
+After deployment, verify the following against the live URLs:
 
-## Hackathon demo path
+1. `GET /api/health` returns `200` and MongoDB is `connected`.
+2. Invalid sign-in shows `Invalid email or password.` without leaking account details.
+3. A real admin can create an asset, scan or manually look it up, check it out, return it, open and resolve maintenance, and download each report.
+4. Viewer accounts cannot create or change records; technicians can manage maintenance but not create assets.
+5. Test camera scanning and PDF downloads on a real HTTPS desktop and mobile browser, including a denied-camera-permission path.
 
-1. Sign in with the seeded admin account.
-2. Review the dashboard's overdue laptop loan and lab-equipment maintenance risk.
-3. Open **Scan & Move**, enter `AST-IT-001`, and return the overdue laptop.
-4. Open the maintenance desk and resolve a service ticket.
-5. Download an audit or inventory PDF from **Reports**.
+## API groups
 
-## Deploy to Render
-
-The included `render.yaml` deploys the React client and Express API together as one Render web service. It builds the client, serves the compiled application from Express, seeds the demo data automatically on a fresh database, and exposes `/api/health` for health checks.
-
-1. Create a free MongoDB Atlas cluster and allow Render's outbound access in its network settings.
-2. In Render, select **New -> Blueprint**, connect `Khanhiba/Smart-Asset-Management-system`, and select the `main` branch.
-3. Render discovers `render.yaml`. Enter the Atlas URI when prompted for `MONGODB_URI`; Render generates `JWT_SECRET` automatically.
-4. Create the Blueprint and wait for the build and one-time seed to finish. The assigned `onrender.com` URL serves both the website and API.
-
-Set `OPENAI_API_KEY` manually in the Render service environment only if live OpenAI insights are desired. Without it, Nexus uses its built-in deterministic insight fallback.
-
-If you create a Render **Web Service** instead of a Blueprint, use these exact settings:
-
-| Setting | Value |
-| --- | --- |
-| Root Directory | Leave blank (repository root) |
-| Build Command | `npm run build` |
-| Start Command | `npm start` |
-| Health Check Path | `/api/health` |
-
-The root build script installs the client and server workspaces with development build tools, then compiles the Vite client. This avoids the `vite: not found` / exit status `127` error that occurs when Render installs only the root package.
+- `/api/auth` — sign-in, current session, and user management.
+- `/api/assets` — asset registry, detail, QR lookup, create, and update.
+- `/api/assignments` — check-out, active / overdue loans, and return.
+- `/api/maintenance` — work tickets and technician updates.
+- `/api/dashboard`, `/api/insights`, `/api/reports`, and `/api/audit` — aggregated operations, recommendations, export data, and audit trail.

@@ -1,18 +1,30 @@
 services:
   - type: web
-    name: nexus-assets
+    name: smart-asset-management-api
     runtime: node
-    plan: free
-    buildCommand: npm ci --include=dev --prefix server && npm ci --include=dev --prefix client && npm run build --prefix client
+    rootDir: server
+    buildCommand: npm ci --omit=dev
     startCommand: npm start
-    initialDeployHook: npm run seed --prefix server
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
+      - key: NODE_VERSION
+        value: 20
       - key: NODE_ENV
         value: production
-      - key: SEED_DEMO_DATA
-        value: true
-      - key: JWT_SECRET
-        generateValue: true
       - key: MONGODB_URI
         sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: JWT_ISSUER
+        value: nexus-assets-api
+      - key: JWT_AUDIENCE
+        value: nexus-assets-web
+      - key: CLIENT_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini

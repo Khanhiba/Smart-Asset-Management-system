@@ -1,68 +1,67 @@
-const API_ROOT = import.meta.env.VITE_API_URL || '';
-const DEMO_TOKEN = 'nexus-demo-mode';
-const DAY = 86400000;
-const dateFromNow = (days) => new Date(Date.now() + days * DAY).toISOString();
-const demoUser = { id: 'demo-admin', name: 'Irha Hasan', email: 'admin@nexus.edu', role: 'admin', department: 'IT Operations' };
+const API_ROOT = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
-let demoAssets = [
-  ['asset-1', 'AST-IT-001', 'MacBook Pro 14', 'Laptop', 'Innovation Lab', 'assigned', 'excellent', 38],
-  ['asset-2', 'AST-IT-002', 'Dell Latitude 7440', 'Laptop', 'IT Store', 'available', 'good', 0],
-  ['asset-3', 'AST-AV-014', 'Epson Laser Projector', 'Projector', 'Auditorium A', 'available', 'fair', 30],
-  ['asset-4', 'AST-LAB-023', 'Digital Oscilloscope', 'Laboratory Equipment', 'Electronics Lab 2', 'maintenance', 'poor', 64],
-  ['asset-5', 'AST-NET-006', 'Cisco Catalyst Switch', 'Networking', 'Data Center', 'available', 'good', 0],
-  ['asset-6', 'AST-AV-019', 'Sony Mirrorless Camera', 'Camera', 'Media Centre', 'available', 'good', 0],
-  ['asset-7', 'AST-PR-003', 'HP LaserJet Pro', 'Printer', 'Library Level 1', 'available', 'fair', 16],
-  ['asset-8', 'AST-FUR-010', 'Ergonomic Study Chair', 'Furniture', 'Design Studio', 'available', 'good', 0],
-].map(([id, assetTag, name, category, location, status, condition, riskScore]) => ({ id, _id: id, assetTag, name, category, location, status, condition, riskScore, riskLevel: riskScore >= 60 ? 'critical' : riskScore >= 35 ? 'high' : riskScore ? 'watch' : 'healthy', department: 'Engineering & Sciences', manufacturer: category === 'Laptop' ? 'Dell' : 'Nexus Demo', model: 'Campus Edition', serialNumber: `SN-${assetTag}`, qrCode: `nexus-demo:${assetTag}`, purchaseDate: dateFromNow(-460), purchaseCost: 50000, warrantyExpiry: dateFromNow(assetTag === 'AST-AV-014' ? 19 : 180), maintenanceIntervalDays: 180, lastMaintenanceDate: dateFromNow(-80), nextMaintenanceDate: dateFromNow(assetTag === 'AST-AV-014' ? -4 : 100), notes: 'Demo-mode asset record. Connect MongoDB Atlas for persistent data.' }));
-
-let demoAssignments = [{ id: 'assignment-1', _id: 'assignment-1', asset: 'asset-1', assigneeName: 'Nisha Verma', assigneeEmail: 'nisha.verma@nexus.edu', assigneeDepartment: 'Robotics Club', checkedOutAt: dateFromNow(-10), dueDate: dateFromNow(-3), conditionOut: 'excellent', returnedAt: null, checkedOutBy: demoUser }];
-let demoMaintenance = [{ id: 'maintenance-1', _id: 'maintenance-1', asset: 'asset-4', title: 'Signal calibration drift', type: 'calibration', priority: 'high', status: 'in_progress', dueDate: dateFromNow(2), assignedTo: { name: 'Rohan Das' }, notes: 'Waveform shows repeatable offset above 5V.', createdAt: dateFromNow(-2) }, { id: 'maintenance-2', _id: 'maintenance-2', asset: 'asset-3', title: 'Preventive projector service', type: 'preventive', priority: 'medium', status: 'open', dueDate: dateFromNow(5), assignedTo: { name: 'Rohan Das' }, notes: 'Clean filters and inspect lamp runtime.', createdAt: dateFromNow(-1) }];
-let demoEvents = [{ id: 'event-1', action: 'asset_checked_out', entityType: 'asset', actor: demoUser, actorName: demoUser.name, createdAt: dateFromNow(-10) }, { id: 'event-2', action: 'maintenance_opened', entityType: 'asset', actor: demoUser, actorName: demoUser.name, createdAt: dateFromNow(-2) }, { id: 'event-3', action: 'asset_created', entityType: 'asset', actor: demoUser, actorName: demoUser.name, createdAt: dateFromNow(-15) }];
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
-const assetFor = (id) => demoAssets.find((asset) => asset.id === id || asset.assetTag === id);
-const ticketView = (ticket) => ({ ...ticket, asset: typeof ticket.asset === 'string' ? assetFor(ticket.asset) : ticket.asset });
-const assignmentView = (assignment) => ({ ...assignment, asset: typeof assignment.asset === 'string' ? assetFor(assignment.asset) : assignment.asset });
-const event = (action, assetId) => demoEvents.unshift({ id: `event-${Date.now()}`, action, entityType: 'asset', entityId: assetId, actor: demoUser, actorName: demoUser.name, createdAt: new Date().toISOString() });
-
-function dashboardData() {
-  const activeLoans = demoAssignments.filter((assignment) => !assignment.returnedAt);
-  const openTickets = demoMaintenance.filter((ticket) => ticket.status !== 'resolved');
-  const group = (items, key) => Object.entries(items.reduce((all, item) => ({ ...all, [item[key]]: (all[item[key]] || 0) + 1 }), {})).map(([_id, count]) => ({ _id, count }));
-  return { metrics: { total: demoAssets.length, available: demoAssets.filter((asset) => asset.status === 'available').length, assigned: demoAssets.filter((asset) => asset.status === 'assigned').length, maintenance: demoAssets.filter((asset) => asset.status === 'maintenance').length, overdueLoans: activeLoans.filter((assignment) => new Date(assignment.dueDate) < new Date()).length }, charts: { category: group(demoAssets, 'category'), locations: group(demoAssets, 'location'), conditions: group(demoAssets, 'condition') }, alerts: { overdueLoans: activeLoans.filter((assignment) => new Date(assignment.dueDate) < new Date()).map(assignmentView), dueMaintenance: openTickets.map(ticketView), warrantyExpiring: demoAssets.filter((asset) => new Date(asset.warrantyExpiry) < new Date(Date.now() + 45 * DAY)), riskAlerts: demoAssets.filter((asset) => asset.riskScore >= 15).sort((a, b) => b.riskScore - a.riskScore) }, recent: demoEvents.slice(0, 7) };
+export class ApiError extends Error {
+  constructor(message, { status, code, requestId } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+  }
 }
 
-function demoRequest(path, { method = 'GET', body } = {}) {
-  const url = new URL(path, 'https://nexus.local'); const pathname = url.pathname; const segments = pathname.split('/').filter(Boolean); const now = new Date().toISOString();
-  if (pathname === '/api/auth/me') return { user: demoUser };
-  if (pathname === '/api/dashboard') return dashboardData();
-  if (pathname === '/api/insights') return { source: 'rules', summary: 'Demo mode is active while MongoDB is unavailable. Core asset workflows remain interactive for judging.', insights: [{ level: 'high', title: '1 overdue loan', body: 'Follow up with the Robotics Club to return the MacBook Pro.', action: 'Review overdue assets' }, { level: 'medium', title: '2 maintenance items', body: 'Complete calibration and preventive service before the next booking cycle.', action: 'Open maintenance queue' }, { level: 'positive', title: 'Demo portfolio is ready', body: 'Connect MongoDB Atlas to persist activity from this deployed demo.', action: 'View inventory' }] };
-  if (pathname === '/api/assets' && method === 'GET') { const search = (url.searchParams.get('search') || '').toLowerCase(); const status = url.searchParams.get('status'); const category = url.searchParams.get('category'); const assets = demoAssets.filter((asset) => (!search || `${asset.assetTag} ${asset.name} ${asset.serialNumber}`.toLowerCase().includes(search)) && (!status || asset.status === status) && (!category || asset.category === category)); return { assets: clone(assets), total: assets.length, page: 1, pages: 1 }; }
-  if (pathname === '/api/assets' && method === 'POST') { const id = `asset-${Date.now()}`; const asset = { ...body, id, _id: id, qrCode: `nexus-demo:${body.assetTag}`, status: body.status || 'available', condition: body.condition || 'good', riskScore: 0, riskLevel: 'healthy', nextMaintenanceDate: dateFromNow(Number(body.maintenanceIntervalDays || 180)), createdAt: now }; demoAssets.unshift(asset); event('asset_created', id); return { asset: clone(asset) }; }
-  if (pathname.startsWith('/api/assets/lookup/')) { const code = decodeURIComponent(segments.at(-1)); const asset = demoAssets.find((item) => item.assetTag === code || item.qrCode === code); if (!asset) throw new Error('No asset matches that QR code or asset tag.'); return { asset: clone(asset) }; }
-  if (pathname.startsWith('/api/assets/')) { const asset = assetFor(segments.at(-1)); if (!asset) throw new Error('Asset not found.'); if (method === 'PATCH') { Object.assign(asset, body); event('asset_updated', asset.id); return { asset: clone(asset) }; } const activeAssignment = demoAssignments.find((assignment) => assignment.asset === asset.id && !assignment.returnedAt); return { asset: clone(asset), activeAssignment: activeAssignment ? assignmentView(activeAssignment) : null, maintenance: demoMaintenance.filter((ticket) => ticket.asset === asset.id).map(ticketView), history: demoEvents.filter((entry) => entry.entityId === asset.id).slice(0, 30) };
-  }
-  if (pathname.startsWith('/api/assignments/') && pathname.endsWith('/checkout')) { const asset = assetFor(segments.at(-2)); if (!asset || asset.status !== 'available') throw new Error('This asset is not available for checkout.'); const assignment = { ...body, id: `assignment-${Date.now()}`, _id: `assignment-${Date.now()}`, asset: asset.id, checkedOutAt: now, checkedOutBy: demoUser, returnedAt: null }; demoAssignments.unshift(assignment); asset.status = 'assigned'; event('asset_checked_out', asset.id); return { assignment: assignmentView(assignment) }; }
-  if (pathname.startsWith('/api/assignments/') && pathname.endsWith('/return')) { const assignment = demoAssignments.find((item) => item.id === segments.at(-2)); if (!assignment) throw new Error('Assignment not found.'); assignment.returnedAt = now; assignment.conditionIn = body.conditionIn; assignment.returnNotes = body.returnNotes; const asset = assetFor(assignment.asset); asset.status = body.conditionIn === 'poor' ? 'maintenance' : 'available'; asset.condition = body.conditionIn; event('asset_returned', asset.id); return { assignment: assignmentView(assignment), asset: clone(asset) }; }
-  if (pathname === '/api/assignments') { const active = demoAssignments.filter((assignment) => !assignment.returnedAt); return { assignments: active.map(assignmentView) }; }
-  if (pathname === '/api/maintenance' && method === 'GET') { const status = url.searchParams.get('status'); return { tickets: demoMaintenance.filter((ticket) => !status || ticket.status === status).map(ticketView) }; }
-  if (pathname === '/api/maintenance' && method === 'POST') { const asset = assetFor(body.assetId); const ticket = { ...body, id: `maintenance-${Date.now()}`, _id: `maintenance-${Date.now()}`, asset: asset.id, status: 'open', createdAt: now }; demoMaintenance.unshift(ticket); asset.status = 'maintenance'; event('maintenance_opened', asset.id); return { ticket: ticketView(ticket) }; }
-  if (pathname.startsWith('/api/maintenance/')) { const ticket = demoMaintenance.find((item) => item.id === segments.at(-1)); if (!ticket) throw new Error('Maintenance ticket not found.'); Object.assign(ticket, body); if (body.status === 'resolved') { ticket.resolvedAt = now; const asset = assetFor(ticket.asset); if (!demoMaintenance.some((item) => item.asset === asset.id && item.status !== 'resolved')) asset.status = 'available'; event('maintenance_resolved', asset.id); } return { ticket: ticketView(ticket) }; }
-  if (pathname.startsWith('/api/reports/')) { const type = segments.at(-1); if (type === 'inventory') return { generatedAt: now, title: 'Asset Inventory Report', totals: { assets: demoAssets.length, available: demoAssets.filter((asset) => asset.status === 'available').length, inMaintenance: demoAssets.filter((asset) => asset.status === 'maintenance').length }, rows: clone(demoAssets) }; if (type === 'maintenance') return { generatedAt: now, title: 'Maintenance Report', totals: { tickets: demoMaintenance.length, unresolved: demoMaintenance.filter((ticket) => ticket.status !== 'resolved').length, totalCost: 0 }, rows: demoMaintenance.map(ticketView) }; return { generatedAt: now, title: 'Asset Audit Report', totals: { events: demoEvents.length }, rows: clone(demoEvents) }; }
-  throw new Error('This demo action is not available. Connect MongoDB Atlas for full persistence.');
+function apiUrl(path) {
+  if (!API_ROOT) throw new ApiError('The application API is not configured. Please contact your administrator.', { code: 'API_NOT_CONFIGURED' });
+  return `${API_ROOT}${path}`;
 }
 
 export async function request(path, { token, method = 'GET', body, signal } = {}) {
-  if (token === DEMO_TOKEN) return demoRequest(path, { method, body });
-  const response = await fetch(`${API_ROOT}${path}`, { method, signal, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }) }, ...(body !== undefined && { body: JSON.stringify(body) }) });
+  const controller = new AbortController();
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  let response;
+  try {
+    response = await fetch(apiUrl(path), {
+      method,
+      signal: controller.signal,
+      headers: { Accept: 'application/json', ...(body !== undefined && { 'Content-Type': 'application/json' }), ...(token && { Authorization: `Bearer ${token}` }) },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+    });
+  } catch (error) {
+    if (error.name === 'AbortError' && signal?.aborted) throw error;
+    if (error.name === 'AbortError') throw new ApiError('The asset service took too long to respond. Please try again.', { code: 'REQUEST_TIMEOUT' });
+    throw new ApiError('Unable to reach the asset service. Check your connection and try again.', { code: 'NETWORK_ERROR' });
+  } finally {
+    window.clearTimeout(timeout);
+    signal?.removeEventListener('abort', abortFromCaller);
+  }
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.message || 'Request failed.');
+  if (!response.ok) throw new ApiError(payload.message || 'The request could not be completed.', { status: response.status, code: payload.code, requestId: payload.requestId });
   return payload;
 }
 
 export const api = {
-  login: async (email, password) => { try { return await request('/api/auth/login', { method: 'POST', body: { email, password } }); } catch (error) { if (email.toLowerCase() === 'admin@nexus.edu' && password === 'NexusDemo!2026') return { token: DEMO_TOKEN, user: demoUser }; throw error; } },
-  me: (token) => request('/api/auth/me', { token }), dashboard: (token) => request('/api/dashboard', { token }), insights: (token) => request('/api/insights', { token }),
-  assets: (token, params = {}) => request(`/api/assets?${new URLSearchParams(Object.entries(params).filter(([, value]) => value)).toString()}`, { token }), asset: (token, id) => request(`/api/assets/${id}`, { token }), lookup: (token, code) => request(`/api/assets/lookup/${encodeURIComponent(code)}`, { token }),
-  createAsset: (token, body) => request('/api/assets', { token, method: 'POST', body }), updateAsset: (token, id, body) => request(`/api/assets/${id}`, { token, method: 'PATCH', body }), checkout: (token, assetId, body) => request(`/api/assignments/${assetId}/checkout`, { token, method: 'POST', body }), returnAsset: (token, assignmentId, body) => request(`/api/assignments/${assignmentId}/return`, { token, method: 'POST', body }), assignments: (token, state) => request(`/api/assignments?state=${state || 'active'}`, { token }), maintenance: (token, status) => request(`/api/maintenance${status ? `?status=${status}` : ''}`, { token }), createMaintenance: (token, body) => request('/api/maintenance', { token, method: 'POST', body }), updateMaintenance: (token, id, body) => request(`/api/maintenance/${id}`, { token, method: 'PATCH', body }), report: (token, type) => request(`/api/reports/${type}`, { token }),
+  login: async (email, password) => {
+    try { return await request('/api/auth/login', { method: 'POST', body: { email, password } }); }
+    catch (error) {
+      if (error.status === 401 || error.status === 422) throw new ApiError('Invalid email or password.', { status: error.status, code: 'INVALID_CREDENTIALS' });
+      throw error;
+    }
+  },
+  me: (token) => request('/api/auth/me', { token }),
+  dashboard: (token) => request('/api/dashboard', { token }),
+  insights: (token) => request('/api/insights', { token }),
+  assets: (token, params = {}) => request(`/api/assets?${new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== '')).toString()}`, { token }),
+  asset: (token, id) => request(`/api/assets/${encodeURIComponent(id)}`, { token }),
+  lookup: (token, code) => request(`/api/assets/lookup/${encodeURIComponent(code)}`, { token }),
+  createAsset: (token, body) => request('/api/assets', { token, method: 'POST', body }),
+  updateAsset: (token, id, body) => request(`/api/assets/${encodeURIComponent(id)}`, { token, method: 'PATCH', body }),
+  checkout: (token, assetId, body) => request(`/api/assignments/${encodeURIComponent(assetId)}/checkout`, { token, method: 'POST', body }),
+  returnAsset: (token, assignmentId, body) => request(`/api/assignments/${encodeURIComponent(assignmentId)}/return`, { token, method: 'POST', body }),
+  assignments: (token, state) => request(`/api/assignments?state=${encodeURIComponent(state || 'active')}`, { token }),
+  maintenance: (token, status) => request(`/api/maintenance${status ? `?status=${encodeURIComponent(status)}` : ''}`, { token }),
+  createMaintenance: (token, body) => request('/api/maintenance', { token, method: 'POST', body }),
+  updateMaintenance: (token, id, body) => request(`/api/maintenance/${encodeURIComponent(id)}`, { token, method: 'PATCH', body }),
+  report: (token, type) => request(`/api/reports/${encodeURIComponent(type)}`, { token }),
 };

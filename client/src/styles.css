@@ -29,6 +29,22 @@
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
 .qr-reader video { border-radius: 16px; object-fit: cover; }
 
+/* Keep the public sign-in theme control above the form instead of over it. */
+main > button[aria-label="Switch to dark mode"],
+main > button[aria-label="Switch to light mode"] {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  display: flex !important;
+  width: fit-content;
+  margin-bottom: 1rem;
+  margin-left: auto;
+  max-width: calc(100vw - 2rem);
+}
+
+main > div.relative.mx-auto.grid { min-height: calc(100vh - 6.25rem); }
+
 html.dark { color-scheme: dark; }
 html.dark body, html.dark .bg-panel { background-color: #0b1120; color: #cbd5e1; }
 html.dark .surface { border-color: #25324a; background-color: #121a2b; box-shadow: 0 8px 30px rgba(0, 0, 0, .22); }

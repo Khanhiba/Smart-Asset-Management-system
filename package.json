@@ -2,11 +2,15 @@
   "name": "nexus-assets",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "start": "npm run start --prefix server",
     "seed": "npm run seed --prefix server",
-    "build": "npm ci --include=dev --prefix server && npm ci --include=dev --prefix client && npm run build --prefix client",
+    "bootstrap:admin": "npm run bootstrap:admin --prefix server",
+    "build": "npm ci --include=dev --prefix client --cache .npm-cache-client && npm run build --prefix client",
     "test": "npm run test --prefix server"
   },
   "devDependencies": {
