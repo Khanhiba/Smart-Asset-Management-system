@@ -1,10 +1,12 @@
 import app from './app.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { runtime, validateEnvironment } from './config/env.js';
+import { seedDemoData } from './seed.js';
 
 async function start() {
   const config = validateEnvironment();
   await connectDatabase(config.mongoUri);
+  if (config.seedDemoData) await seedDemoData();
   const server = app.listen(config.port, () => console.info(JSON.stringify({ level: 'info', event: 'api_listening', port: config.port, environment: runtime.environment })));
   const shutdown = async (signal) => {
     console.info(JSON.stringify({ level: 'info', event: 'shutdown_started', signal }));

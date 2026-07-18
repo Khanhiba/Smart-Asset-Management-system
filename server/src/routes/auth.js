@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { User } from '../models/User.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { AppError, asyncRoute } from '../utils/appError.js';
-import { userInput } from '../utils/validation.js';
+import { registrationInput, userInput } from '../utils/validation.js';
 import { runtime } from '../config/env.js';
 
 const router = express.Router();
@@ -16,6 +16,12 @@ router.post('/login', asyncRoute(async (req, res) => {
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
   if (!user || !user.active || !(await user.verifyPassword(password))) throw new AppError('Invalid email or password.', 401);
   res.json({ token: tokenFor(user), user: userView(user) });
+}));
+
+router.post('/register', asyncRoute(async (req, res) => {
+  const values = registrationInput.parse(req.body);
+  const user = await User.create({ ...values, email: values.email.toLowerCase(), role: 'viewer' });
+  res.status(201).json({ token: tokenFor(user), user: userView(user) });
 }));
 
 router.get('/me', authenticate, (req, res) => res.json({ user: userView(req.user) }));

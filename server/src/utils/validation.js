@@ -38,3 +38,9 @@ export const userInput = z.object({
   role: z.enum(['admin', 'asset_manager', 'technician', 'viewer']),
   department: z.string().trim().min(2).max(80),
 }).strict();
+export const registrationInput = z.object({
+  name: z.string().trim().min(2).max(80),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(12).max(72),
+  department: z.string().trim().min(2).max(80).optional().default('General'),
+}).strict();

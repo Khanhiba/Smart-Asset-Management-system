@@ -7,7 +7,7 @@ The application consists of two deployable services:
 - `client/` — React + Vite application deployed to Netlify.
 - `server/` — Express API deployed to Render, backed by MongoDB Atlas.
 
-The deployed frontend only calls `VITE_API_URL`. There is no local-storage, mock-data, or automatic demo-login fallback in production.
+The frontend automatically uses the JWT-protected API configured by VITE_API_URL when it is reachable. If that service is unavailable, it accepts only the seeded demo accounts and clearly labels the session as **Demo Mode**; demo changes remain in the browser and are not persisted.
 
 ## Production capabilities
 
@@ -56,7 +56,20 @@ Use Node.js 20 or 22 and a MongoDB Atlas connection string. MongoDB must be runn
 
 Open `http://localhost:5173` and sign in with that administrator account.
 
-`npm run seed` is only available for non-production development data. It is deliberately blocked when `NODE_ENV=production` and is never run when the API starts.
+Set SEED_DEMO_DATA=true to create the four demo accounts and sample asset portfolio. The Render Blueprint enables this intentionally; seeding is idempotent and does not overwrite an existing demo user's password.
+
+## Demo and production modes
+
+When the configured API is missing or temporarily unreachable, the login screen accepts these demonstration accounts and the app shows a visible Demo Mode badge:
+
+| Account | Role |
+| --- | --- |
+| admin@nexus.edu | Administrator |
+| manager@nexus.edu | Asset Manager |
+| technician@nexus.edu | Technician |
+| viewer@nexus.edu | Viewer |
+
+All demo accounts use the password NexusDemo!2026. Demo Mode data is held only in the current browser session. When the API is reachable, the same accounts are authenticated from MongoDB Atlas, changes persist normally, and new production viewer accounts can be registered from the login screen.
 
 ## Environment variables
 
@@ -71,6 +84,7 @@ Open `http://localhost:5173` and sign in with that administrator account.
 | `CLIENT_URL` | Yes | Comma-separated allowed browser origins, with no path or trailing slash. |
 | `OPENAI_API_KEY` | No | Enables OpenAI-powered aggregate operational insights. |
 | `OPENAI_MODEL` | No | Defaults to `gpt-4.1-mini`. |
+| `SEED_DEMO_DATA` | No | When true, creates the supplied demo accounts and sample data on API startup. |
 | `VITE_API_URL` | Yes for Netlify | Public URL of the Render API, with no trailing slash. |
 
 The API fails fast with a clear startup error if `MONGODB_URI`, `JWT_SECRET`, or `CLIENT_URL` is absent or invalid.
@@ -86,7 +100,7 @@ The API fails fast with a clear startup error if `MONGODB_URI`, `JWT_SECRET`, or
    CLIENT_URL=https://smart-asset-management-system.netlify.app
    ```
 
-   Render generates `JWT_SECRET`. Do not use a sample value, and do not configure automatic seed data in production.
+   Render generates JWT_SECRET and the included Blueprint sets SEED_DEMO_DATA=true so the demo accounts are available in MongoDB Atlas.
 4. Render uses these settings from the Blueprint:
 
    | Setting | Value |

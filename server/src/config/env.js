@@ -22,6 +22,7 @@ export const runtime = {
   jwtIssuer: process.env.JWT_ISSUER || 'nexus-assets-api',
   jwtAudience: process.env.JWT_AUDIENCE || 'nexus-assets-web',
   clientOrigins: splitOrigins(process.env.CLIENT_URL),
+  seedDemoData: process.env.SEED_DEMO_DATA === 'true',
 };
 
 export function validateEnvironment() {

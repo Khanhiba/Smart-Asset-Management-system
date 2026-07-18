@@ -24,6 +24,8 @@ services:
         value: nexus-assets-web
       - key: CLIENT_URL
         sync: false
+      - key: SEED_DEMO_DATA
+        value: true
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL

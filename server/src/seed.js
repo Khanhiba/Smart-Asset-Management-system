@@ -60,7 +60,7 @@ export async function seedDemoData() {
 
 async function run() {
   const config = validateEnvironment();
-  if (runtime.environment === 'production') throw new Error('The sample-data seed is disabled in production. Create the first real administrator with npm run bootstrap:admin.');
+  if (runtime.environment === 'production' && !runtime.seedDemoData) throw new Error('Set SEED_DEMO_DATA=true to seed the explicitly requested demo accounts in production.');
   await connectDatabase(config.mongoUri);
   await seedDemoData();
 }
