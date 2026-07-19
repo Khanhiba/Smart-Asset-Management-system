@@ -20,7 +20,7 @@ router.get('/', asyncRoute(async (req, res) => {
     Asset.aggregate([{ $match: { status: { $ne: 'retired' } } }, { $group: { _id: '$category', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 8 }]),
     Asset.aggregate([{ $match: { status: { $ne: 'retired' } } }, { $group: { _id: '$location', count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 6 }]),
     Asset.aggregate([{ $match: { status: { $ne: 'retired' } } }, { $group: { _id: '$condition', count: { $sum: 1 } } }]),
-    AuditLog.find().populate('actor', 'name').sort({ createdAt: -1 }).limit(7),
+    AuditLog.find({ action: { $ne: 'demo_inventory_seeded' } }).populate('actor', 'name').sort({ createdAt: -1 }).limit(7),
     Asset.find({ status: { $ne: 'retired' } }),
     Assignment.distinct('asset', { returnedAt: null, dueDate: { $lt: now } }),
     Maintenance.distinct('asset', { status: { $ne: 'resolved' } }),

@@ -55,6 +55,13 @@ export async function seedDemoData() {
   const projector = created.find((item) => item.assetTag === 'AST-AV-014');
   if (!await Maintenance.exists({ asset: projector._id, status: { $ne: 'resolved' } })) await Maintenance.create({ asset: projector._id, title: 'Preventive projector service', type: 'preventive', priority: 'medium', dueDate: days(5), assignedTo: technician._id, createdBy: manager._id, notes: 'Clean filters and inspect lamp runtime.' });
   if (!await AuditLog.exists()) await AuditLog.create({ action: 'demo_inventory_seeded', entityType: 'system', entityId: admin._id, actor: admin._id, actorName: admin.name, details: { assets: created.length } });
+  if (!await AuditLog.exists({ action: { $in: ['asset_checked_out', 'maintenance_opened', 'asset_created'] } })) {
+    await AuditLog.insertMany([
+      { action: 'asset_created', entityType: 'asset', entityId: projector._id, actor: admin._id, actorName: admin.name, details: { assetTag: projector.assetTag, name: projector.name }, createdAt: days(-15) },
+      { action: 'asset_checked_out', entityType: 'asset', entityId: loanAsset._id, actor: manager._id, actorName: manager.name, details: { assetTag: loanAsset.assetTag, assignee: 'Nisha Verma' }, createdAt: days(-10) },
+      { action: 'maintenance_opened', entityType: 'asset', entityId: repairAsset._id, actor: admin._id, actorName: admin.name, details: { assetTag: repairAsset.assetTag, title: 'Signal calibration drift' }, createdAt: days(-2) },
+    ]);
+  }
   console.info(JSON.stringify({ level: 'info', event: 'demo_seed_complete', assets: created.length }));
 }
 

@@ -229,16 +229,16 @@ function printLabel(asset) {
   if (image?.complete) window.setTimeout(triggerPrint, 50); else image?.addEventListener('load', triggerPrint, { once: true });
 }
 
-function ModeBadge({ mode }) {
-  const demo = mode === 'demo';
-  return <span className={demo ? 'inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-700' : 'inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700'} title={demo ? 'Demo data is stored only in this browser session.' : 'Connected to the production API and MongoDB.'}>{demo ? 'Demo Mode' : 'Production'}</span>;
+function DemoModeBadge({ mode }) {
+  if (mode !== 'demo') return null;
+  return <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-700" title="Demo data is stored only in this browser session.">Demo Mode</span>;
 }
 
 function ProductionTopbar({ page, user, mode, setPage, theme, onToggleTheme }) {
   const labels = { dashboard: ['Good morning', 'Here is your campus asset pulse.'], assets: ['Asset registry', 'Search, inspect, and manage every asset.'], scanner: ['Scan & move', 'Fast, auditable asset handoffs.'], maintenance: ['Maintenance desk', 'Keep critical equipment classroom-ready.'], reports: ['Reports center', 'Export an audit-ready record in seconds.'] };
   const [headline, subline] = labels[page];
   const dark = theme === 'dark';
-  return <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-panel/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8"><div className="mx-auto flex max-w-[1600px] items-center justify-between pl-12 lg:pl-0"><div><p className="text-lg font-extrabold tracking-tight text-ink sm:text-2xl">{headline}, {user.name.split(' ')[0]} <span className="inline-block">👋</span></p><p className="mt-0.5 hidden text-xs font-medium text-slate-500 sm:block">{subline}</p></div><div className="flex items-center gap-2"><ModeBadge mode={mode} /><button onClick={onToggleTheme} className="btn-secondary !px-3" title={dark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden sm:inline">{dark ? 'Light' : 'Dark'}</span></button><button onClick={() => setPage('scanner')} className="btn-secondary hidden sm:inline-flex"><QrCode size={16} />Scan asset</button><button className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 hover:text-ink" aria-label="Notifications"><Bell size={18} /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white" /></button></div></div></header>;
+  return <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-panel/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8"><div className="mx-auto flex max-w-[1600px] items-center justify-between pl-12 lg:pl-0"><div><p className="text-lg font-extrabold tracking-tight text-ink sm:text-2xl">{headline}, {user.name.split(' ')[0]} <span className="inline-block">👋</span></p><p className="mt-0.5 hidden text-xs font-medium text-slate-500 sm:block">{subline}</p></div><div className="flex items-center gap-2"><DemoModeBadge mode={mode} /><button onClick={onToggleTheme} className="btn-secondary !px-3" title={dark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>{dark ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden sm:inline">{dark ? 'Light' : 'Dark'}</span></button><button onClick={() => setPage('scanner')} className="btn-secondary hidden sm:inline-flex"><QrCode size={16} />Scan asset</button><button className="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 hover:text-ink" aria-label="Notifications"><Bell size={18} /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-white" /></button></div></div></header>;
 }
 
 function ProductionLogin({ onLogin, onRegister, theme, onToggleTheme }) {
