@@ -261,7 +261,7 @@ function ProductionLogin({ onLogin, onRegister, theme, onToggleTheme }) {
         <div><label className="label" htmlFor="login-email">Work email</label><input id="login-email" className="field" type="email" autoComplete="email" required value={values.email} onChange={(e) => setValues({ ...values, email: e.target.value })} /></div>
         <div><label className="label" htmlFor="login-password">Password</label><input id="login-password" className="field" type="password" autoComplete="current-password" required value={values.password} onChange={(e) => setValues({ ...values, password: e.target.value })} /></div>
         {error && <p role="alert" aria-live="assertive" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-600">{error}</p>}
-        <button disabled={loading} className="btn-primary mt-1 w-full">{loading ? 'Signing in...' : 'Enter Command Center'} <ChevronRight size={17} /></button>
+        <button disabled={loading} className="btn-primary mt-1 w-full">{loading ? 'Signing in...' : 'Sign in'} <ChevronRight size={17} /></button>
       </form>
       <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs text-slate-500">
         <p className="font-extrabold text-slate-700">Demo Account</p>
